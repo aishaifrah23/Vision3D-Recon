@@ -1,0 +1,16 @@
+# Python Caches
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+
+# Project Outputs & Datasets
+data/output/*
+!data/output/.gitkeep
+data/raw_stereo/*.png
+data/raw_stereo/*.mp4
+
+# VS Code
+.vscode/
+tempCodeRunnerFile.py
