@@ -8,3 +8,14 @@ def flow_to_hsv(flow: np.ndarray) -> np.ndarray:
     hsv[..., 1] = 255
     hsv[..., 2] = cv2.normalize(mag, None, 0, 255, cv2.NORM_MINMAX)
     return cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
+
+class MotionVideoWriter:
+    def __init__(self, output_path: str, fps: float, frame_size: tuple):
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        self.writer = cv2.VideoWriter(output_path, fourcc, fps, frame_size)
+
+    def write(self, frame: np.ndarray):
+        self.writer.write(frame)
+
+    def release(self):
+        self.writer.release()
