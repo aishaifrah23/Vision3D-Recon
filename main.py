@@ -1,61 +1,36 @@
-import sys
-import os
-from pathlib import Path
-
-# Add project root directory to sys.path
-PROJECT_ROOT = Path(__file__).resolve().parent
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
-
-import argparse
 import cv2
-from src.stereo_reconstruction.engine import Stereo3DEngine
-from src.motion_analytics.flow_tracker import MotionTracker
+from src.utils.cli_parser import parse_args
+from src.utils.config import validate_path, StereoConfig
+from src.stereo_reconstruction.disparity import DisparityEstimator
+from src.stereo_reconstruction.ply_exporter import export_ply
+from src.motion_analytics.farneback import compute_dense_flow
+from src.motion_analytics.visualizer import flow_to_hsv
 
 def main():
-    parser = argparse.ArgumentParser(description="Vision3D-Recon CLI Tool")
-    parser.add_argument("--mode", choices=["stereo", "motion"], required=True, help="Execution mode")
-    parser.add_argument("--left", type=str, help="Left stereo image path")
-    parser.add_argument("--right", type=str, help="Right stereo image path")
-    parser.add_argument("--video", type=str, help="Input video path for motion analysis")
-    parser.add_argument("--output", type=str, required=True, help="Output destination file path")
-
-    args = parser.parse_args()
-
+    args = parse_args()
+    
     if args.mode == "stereo":
-        if not args.left or not args.right:
-            print("[ERROR] Both --left and --right flags are required for stereo mode.")
-            return
-
-        if not os.path.exists(args.left):
-            print(f"[ERROR] File not found: {args.left}")
-            return
-            
-        if not os.path.exists(args.right):
-            print(f"[ERROR] File not found: {args.right}")
-            return
-
-        img_l = cv2.imread(args.left)
-        img_r = cv2.imread(args.right)
-
-        engine = Stereo3DEngine()
-        disp = engine.compute_disparity(img_l, img_r)
+        validate_path(args.left)
+        validate_path(args.right)
+        img_l, img_r = cv2.imread(args.left), cv2.imread(args.right)
+        estimator = DisparityEstimator(StereoConfig())
+        disp = estimator.compute(img_l, img_r)
+        export_ply(disp, img_l, args.output)
         
-        # Ensure target directory exists
-        os.makedirs(os.path.dirname(args.output), exist_ok=True)
-        engine.generate_point_cloud(img_l, disp, args.output)
-
     elif args.mode == "motion":
-        if not args.video:
-            print("[ERROR] --video flag is required for motion mode.")
-            return
-
-        if not os.path.exists(args.video):
-            print(f"[ERROR] Video file not found: {args.video}")
-            return
-
-        tracker = MotionTracker()
-        tracker.process_video(args.video, args.output)
+        validate_path(args.video)
+        cap = cv2.VideoCapture(args.video)
+        ret, prev = cap.read()
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret: break
+            flow = compute_dense_flow(prev, frame)
+            vis = flow_to_hsv(flow)
+            cv2.imshow("Dense Optical Flow", vis)
+            if cv2.waitKey(30) & 0xFF == 27: break
+            prev = frame
+        cap.release()
+        cv2.destroyAllWindows()
 
 if __name__ == "__main__":
     main()
