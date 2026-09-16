@@ -1,54 +1,80 @@
 # Vision3D-Recon
 
-Stereo 3D reconstruction + dense optical flow tracking, wrapped in a single CLI.
+A modular Opencv toolkit designed for 3D stereo reconstruction and dense optical flow motion tracking. It allows users to turn image pairs into 3D point clouds and calculate real-time motion vectors from video files or live camera streams through a command-line interface.
 
-I built this to play around with classic stereo vision techniques — no deep learning,
-just OpenCV's block matching and Farneback flow, done properly. Give it a calibrated
-stereo pair and it'll spit out a colored point cloud. Give it a video and it'll track
-pixel motion frame to frame and render that as a flow visualization.
+## Features
 
-## What it does
+* **3D Point Cloud Generation:** Uses OpenCVs algorithm to compute depth maps and then reprojects pixels into 3D space. The resulting filtered point clouds are saved in the.ply` format.
 
-- **Stereo depth**: StereoSGBM computes a disparity map from left/right image pairs,
-  which gets reprojected into 3D (X, Y, Z) points and exported as an ASCII `.ply`.
-- **Motion tracking**: Farneback dense optical flow over a video, exported as an
-  annotated MP4 showing per-pixel velocity.
+* **Dense Optical Flow:** Tracks motion one frame at a time using the Farneback algorithm. It maps velocity and direction directly into the HSV color space making motion visually clear.
 
-Two pipelines, one entry point (`main.py`), picked via `--mode`.
+* **Flexible Video/Camera Inputs:** Accepts both saved MP4 or AVI videos and live camera feeds. These inputs can be processed with command-line flags.
 
-## Project layout
+* **Modular Architecture:** Keeps CLI handling, parameter configuration algorithm logic and output writers clearly separated for maintenance and extension.
+
+## Repository Structure
+
 ```
+
 Vision3D-Recon/
-├── data/
-│   ├── raw_stereo/                  # input stereo images and sample videos
-│   └── output/                      # generated .ply and .mp4 files land here
-├── src/
-│   ├── stereo_reconstruction/
-│   │   ├── __init__.py
-│   │   └── engine.py                # disparity computation + point cloud export
-│   └── motion_analytics/
-│       ├── __init__.py
-│       └── flow_tracker.py          # optical flow processing
-├── main.py                          # CLI entry point
-├── requirements.txt
-├── statement.md
-├── .gitignore
-└── README.md
-```
 
+├── main.py # Main script that runs stereo and motion modes via CLI
+
+├── README.md # Instructions for setup and running the tool
+
+├── statement.md # Overview of the project and the problem it solves
+
+├── requirements.txt # List of required packages and dependencies
+
+├── sample.mp4 # Sample input video
+
+└── src/
+
+├── __init__.py
+
+├── utils/
+
+│ ├── __init__.py
+
+│ ├── cli_parser.py # Handles argument parsing for the command line
+
+│ └── config.py # Manages stereo. Checks file paths
+
+├── stereo_reconstruction/
+
+│ ├── __init__.py
+
+│ ├── disparity.py # Creates disparity maps using
+
+│ └── ply_exporter.py # Converts pixels to 3D and saves them as PLY files
+
+└── motion_analytics/
+
+├── __init__.py
+
+├── farneback.py # Calculates optical flow using the Farneback method
+
+└── visualizer.py # Displays motion in HSV. Writes results, to MP4
+
+```
 ## Setup
 
-Needs Python 3.8+.
+Needs Python 3.8+, OpenCV (opencv-python), NumPy.
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/Vision3D-Recon.git
+1) Clone the repository:
+git clone [https://github.com/aishaifrah23/Vision3D-Recon.git](https://github.com/aishaifrah23/Vision3D-Recon.git)
 cd Vision3D-Recon
+2) Create and activate a virtual environment:
 python -m venv venv
-.\venv\Scripts\Activate.ps1   # Windows PowerShell
+.\venv\Scripts\activate   # Windows PowerShell
+python3 -m venv venv
+source venv/bin/activate # macOS / Linux
 pip install -r requirements.txt
 ```
 
 ## Usage
+All commands run through main.py
 
 **Stereo reconstruction** — takes a left/right pair, outputs a point cloud:
 
@@ -59,7 +85,12 @@ python main.py --mode stereo --left data/raw_stereo/left.png --right data/raw_st
 **Motion analytics** — takes a video, outputs a flow visualization:
 
 ```bash
-python main.py --mode motion --video data/raw_stereo/sample_motion.mp4 --output data/output/motion_flow.mp4
+python main.py --mode motion --video sample.mp4 --output motion_output.mp4
+```
+**Motion Tracking Mode (Webcam)**
+Runs motion estimation on a live camera stream using camera index 0
+```bash
+python main.py --mode motion --video 0
 ```
 
 ### CLI flags
