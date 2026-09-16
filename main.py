@@ -19,7 +19,8 @@ def main():
         
     elif args.mode == "motion":
         validate_path(args.video)
-        cap = cv2.VideoCapture(args.video)
+        video_src = int(args.video) if args.video.isdigit() else args.video
+        cap = cv2.VideoCapture(video_src)
         
         fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
